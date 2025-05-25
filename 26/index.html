@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>メモ帳</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="manifest.json" />
+  <script defer src="script.js"></script>
+</head>
+<body>
+  <div id="app">
+    <button id="menu-button">≡</button>
+    <div id="sidebar" class="hidden">
+      <h2>メモ一覧</h2>
+      <button id="add-note">+ 新しいメモ</button>
+      <ul id="note-list"></ul>
+      <button id="delete-note">🗑 削除</button>
+    </div>
+    <div id="main">
+      <input id="note-title" placeholder="タイトルを入力" />
+      <textarea id="note-content" placeholder="メモを入力..."></textarea>
+    </div>
+  </div>
+</body>
+</html>
