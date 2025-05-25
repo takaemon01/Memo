@@ -1,0 +1,79 @@
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background: #1e1e1e;
+  color: #d0f0c0;
+}
+
+#app {
+  display: flex;
+  height: 100vh;
+}
+
+#menu-button {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 1.5em;
+  background: none;
+  border: none;
+  color: #d0f0c0;
+  cursor: pointer;
+}
+
+#sidebar {
+  width: 250px;
+  background: #333;
+  padding: 10px;
+  overflow-y: auto;
+  transition: transform 0.3s ease;
+}
+
+#sidebar.hidden {
+  transform: translateX(-260px);
+}
+
+#sidebar h2 {
+  margin-top: 0;
+}
+
+#note-list {
+  list-style: none;
+  padding: 0;
+}
+
+#note-list li {
+  padding: 5px;
+  border-bottom: 1px solid #444;
+  cursor: pointer;
+}
+
+#note-list li.active {
+  background: #444;
+}
+
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+#note-title {
+  font-size: 1.2em;
+  padding: 10px;
+  margin-bottom: 10px;
+  background: #2a2a2a;
+  color: #fff;
+  border: none;
+}
+
+#note-content {
+  flex: 1;
+  padding: 10px;
+  background: #2a2a2a;
+  color: #fff;
+  border: none;
+  resize: none;
+  font-family: monospace;
+}
