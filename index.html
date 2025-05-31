@@ -2,29 +2,145 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>メモ帳 - ログイン対応版</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>メモ帳アプリ</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    textarea {
+      width: 100%;
+      height: 300px;
+      margin-top: 10px;
+    }
+    .auth {
+      max-width: 300px;
+      margin: 50px auto;
+    }
+    .auth input {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+    }
+    .auth button {
+      width: 100%;
+      padding: 10px;
+    }
+    .menu {
+      background: #eee;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .message {
+      color: green;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
 
-  <div id="login-screen">
-    <h2>ログイン / 新規登録</h2>
-    <input type="text" id="username" placeholder="ユーザー名" />
-    <input type="password" id="password" placeholder="パスワード" />
-    <button id="login-button">ログイン</button>
-    <button id="register-button">新規登録</button>
-    <p id="login-message" style="color:red;"></p>
-  </div>
+<div class="auth" id="authSection">
+  <h2>ログイン・新規登録</h2>
+  <input type="text" id="username" placeholder="ユーザー名">
+  <input type="password" id="password" placeholder="パスワード">
+  <button onclick="login()">ログイン</button>
+  <button onclick="register()">新規登録</button>
+  <p id="authMessage" class="message"></p>
+</div>
 
-  <div id="app" style="display:none;">
-    <h2>メモ帳 - <span id="current-user"></span> さん</h2>
-    <button id="signout-button">サインアウト</button>
-    <div id="memo-list"></div>
-    <button id="add-memo-button">+ 新しいメモ</button>
-    <textarea id="memo-content" placeholder="メモ本文（自動保存されます）"></textarea>
+<div id="appSection" style="display:none;">
+  <div class="menu">
+    <span id="welcome"></span>
+    <button onclick="logout()">サインアウト</button>
   </div>
+  <div class="container">
+    <h2>メモ帳</h2>
+    <textarea id="memo" placeholder="ここにメモを書いてください..."></textarea>
+  </div>
+</div>
 
-  <script src="app.js"></script>
+<script>
+  let currentUser = null;
+
+  // 自動ログイン
+  window.onload = function () {
+    const user = localStorage.getItem("currentUser");
+    if (user) {
+      currentUser = user;
+      showApp();
+      document.getElementById("memo").value = localStorage.getItem("memo_" + currentUser) || "";
+    }
+  };
+
+  function register() {
+    const user = document.getElementById("username").value;
+    const pass = document.getElementById("password").value;
+    if (!user || !pass) {
+      showMessage("ユーザー名とパスワードを入力してください");
+      return;
+    }
+
+    const users = JSON.parse(localStorage.getItem("users") || "{}");
+
+    if (users[user]) {
+      showMessage("そのユーザー名は既に使われています");
+      return;
+    }
+
+    users[user] = pass;
+    localStorage.setItem("users", JSON.stringify(users));
+    showMessage("新規登録が設定されました。");
+  }
+
+  function login() {
+    const user = document.getElementById("username").value;
+    const pass = document.getElementById("password").value;
+    const users = JSON.parse(localStorage.getItem("users") || "{}");
+
+    if (users[user] === pass) {
+      currentUser = user;
+      localStorage.setItem("currentUser", user);
+      showApp();
+      document.getElementById("memo").value = localStorage.getItem("memo_" + currentUser) || "";
+    } else {
+      showMessage("ログインに失敗しました");
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem("currentUser");
+    currentUser = null;
+    document.getElementById("authSection").style.display = "block";
+    document.getElementById("appSection").style.display = "none";
+    document.getElementById("username").value = "";
+    document.getElementById("password").value = "";
+    document.getElementById("memo").value = "";
+  }
+
+  function showApp() {
+    document.getElementById("authSection").style.display = "none";
+    document.getElementById("appSection").style.display = "block";
+    document.getElementById("welcome").textContent = `ようこそ、${currentUser} さん`;
+  }
+
+  function showMessage(msg) {
+    document.getElementById("authMessage").textContent = msg;
+  }
+
+  document.getElementById("memo").addEventListener("input", () => {
+    if (currentUser) {
+      localStorage.setItem("memo_" + currentUser, document.getElementById("memo").value);
+    }
+  });
+</script>
 </body>
 </html>
