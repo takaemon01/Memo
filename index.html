@@ -44,6 +44,10 @@
       color: green;
       font-weight: bold;
     }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -82,28 +86,51 @@
   };
 
   function register() {
-    const user = document.getElementById("username").value;
+    const user = document.getElementById("username").value.trim();
     const pass = document.getElementById("password").value;
-    if (!user || !pass) {
-      showMessage("ユーザー名とパスワードを入力してください");
+
+    if (!user && !pass) {
+      showMessage("ユーザー名とパスワードを入力してください", true);
+      return;
+    }
+    if (!user) {
+      showMessage("ユーザー名を入力してください", true);
+      return;
+    }
+    if (!pass) {
+      showMessage("パスワードを入力してください", true);
       return;
     }
 
     const users = JSON.parse(localStorage.getItem("users") || "{}");
 
     if (users[user]) {
-      showMessage("そのユーザー名は既に使われています");
+      showMessage("そのユーザー名は既に使われています", true);
       return;
     }
 
     users[user] = pass;
     localStorage.setItem("users", JSON.stringify(users));
-    showMessage("新規登録が設定されました。");
+    showMessage("新規登録が設定されました。", false);
   }
 
   function login() {
-    const user = document.getElementById("username").value;
+    const user = document.getElementById("username").value.trim();
     const pass = document.getElementById("password").value;
+
+    if (!user && !pass) {
+      showMessage("ユーザー名とパスワードを入力してください", true);
+      return;
+    }
+    if (!user) {
+      showMessage("ユーザー名を入力してください", true);
+      return;
+    }
+    if (!pass) {
+      showMessage("パスワードを入力してください", true);
+      return;
+    }
+
     const users = JSON.parse(localStorage.getItem("users") || "{}");
 
     if (users[user] === pass) {
@@ -112,7 +139,7 @@
       showApp();
       document.getElementById("memo").value = localStorage.getItem("memo_" + currentUser) || "";
     } else {
-      showMessage("ログインに失敗しました");
+      showMessage("ログインに失敗しました", true);
     }
   }
 
@@ -124,6 +151,7 @@
     document.getElementById("username").value = "";
     document.getElementById("password").value = "";
     document.getElementById("memo").value = "";
+    showMessage("", false);
   }
 
   function showApp() {
@@ -132,8 +160,10 @@
     document.getElementById("welcome").textContent = `ようこそ、${currentUser} さん`;
   }
 
-  function showMessage(msg) {
-    document.getElementById("authMessage").textContent = msg;
+  function showMessage(msg, isError) {
+    const el = document.getElementById("authMessage");
+    el.textContent = msg;
+    el.className = isError ? "error" : "message";
   }
 
   document.getElementById("memo").addEventListener("input", () => {
