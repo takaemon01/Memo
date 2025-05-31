@@ -3,33 +3,50 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>メモ帳</title>
+  <title>メモ帳アプリ</title>
   <style>
+    /*── 全体 ──*/
     body {
       margin: 0;
       font-family: sans-serif;
       background: #1e1e1e;
       color: #d0f0c0;
     }
+    /*── 認証画面 ──*/
     #auth-container, #app {
       display: none;
       height: 100vh;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
+      box-sizing: border-box;
     }
     #auth-container.active, #app.active {
       display: flex;
     }
-    input, textarea, button {
-      margin: 5px;
-      padding: 10px;
-      font-size: 1em;
+    #auth-container {
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    #auth-container input {
+      width: 250px;
+      padding: 8px;
+      margin: 5px 0;
+      box-sizing: border-box;
+    }
+    #auth-container button {
+      width: 270px;
+      padding: 8px;
+      margin: 5px 0;
+      cursor: pointer;
     }
     #message {
-      color: yellow;
+      margin-top: 10px;
+      height: 1.2em;
+      color: #ffcc00;
     }
+    /*── メモアプリ画面 ──*/
     #app {
+      display: flex;
       flex-direction: row;
     }
     #menu-button {
@@ -41,6 +58,7 @@
       border: none;
       color: #d0f0c0;
       cursor: pointer;
+      z-index: 10;
     }
     #sidebar {
       width: 250px;
@@ -48,13 +66,26 @@
       padding: 10px;
       overflow-y: auto;
       transition: transform 0.3s ease;
+      box-sizing: border-box;
     }
     #sidebar.hidden {
       transform: translateX(-260px);
     }
+    #sidebar h2 {
+      margin-top: 0;
+      color: #fff;
+    }
+    #sidebar button {
+      width: 100%;
+      padding: 6px;
+      margin: 5px 0;
+      box-sizing: border-box;
+      cursor: pointer;
+    }
     #note-list {
       list-style: none;
       padding: 0;
+      margin: 0;
     }
     #note-list li {
       padding: 5px;
@@ -69,37 +100,46 @@
       display: flex;
       flex-direction: column;
       padding: 20px;
-    }
-    #note-title, #note-content {
-      background: #2a2a2a;
-      color: #fff;
-      border: none;
+      box-sizing: border-box;
     }
     #note-title {
       font-size: 1.2em;
       padding: 10px;
       margin-bottom: 10px;
+      background: #2a2a2a;
+      color: #fff;
+      border: none;
+      box-sizing: border-box;
     }
     #note-content {
       flex: 1;
       padding: 10px;
+      background: #2a2a2a;
+      color: #fff;
+      border: none;
       resize: none;
       font-family: monospace;
+      box-sizing: border-box;
+    }
+    #sidebar .logout {
+      background: #550000;
+      color: #fff;
     }
   </style>
 </head>
 <body>
-  <!-- ログイン・登録 -->
+
+  <!-- 認証画面 -->
   <div id="auth-container" class="active">
     <h2>ログイン / 新規登録</h2>
-    <input id="username" placeholder="ユーザー名">
-    <input id="password" placeholder="パスワード" type="password">
+    <input id="username"     placeholder="ユーザー名"   />
+    <input id="password" type="password" placeholder="パスワード" />
     <button id="register">新規登録</button>
     <button id="login">ログイン</button>
     <div id="message"></div>
   </div>
 
-  <!-- メモアプリ -->
+  <!-- メモ帳アプリ画面 -->
   <div id="app">
     <button id="menu-button">≡</button>
     <div id="sidebar" class="hidden">
@@ -107,102 +147,105 @@
       <button id="add-note">+ 新しいメモ</button>
       <ul id="note-list"></ul>
       <button id="delete-note">🗑 削除</button>
-      <button id="logout">🚪 サインアウト</button>
+      <button id="logout" class="logout">🚪 サインアウト</button>
     </div>
     <div id="main">
-      <input id="note-title" placeholder="タイトルを入力" />
+      <input  id="note-title"   placeholder="タイトルを入力" />
       <textarea id="note-content" placeholder="メモを入力..."></textarea>
     </div>
   </div>
 
   <script>
-    // 認証部分
+    /*────────────────────────認証───────────────*/
     const users = JSON.parse(localStorage.getItem("users")) || {};
-    let currentUser = localStorage.getItem("currentUser");
+    let currentUser = localStorage.getItem("currentUser") || null;
 
     const authContainer = document.getElementById("auth-container");
-    const app = document.getElementById("app");
-    const message = document.getElementById("message");
-    const usernameInput = document.getElementById("username");
-    const passwordInput = document.getElementById("password");
+    const appContainer  = document.getElementById("app");
+    const msgEl         = document.getElementById("message");
+    const inUser        = document.getElementById("username");
+    const inPass        = document.getElementById("password");
 
     function showMessage(text) {
-      message.textContent = text;
+      msgEl.textContent = text;
     }
 
-    function loginUser(user) {
+    function enterApp(user) {
       currentUser = user;
       localStorage.setItem("currentUser", user);
       authContainer.classList.remove("active");
-      app.classList.add("active");
+      appContainer.classList.add("active");
       loadNotes();
     }
 
     document.getElementById("register").onclick = () => {
-      const user = usernameInput.value.trim();
-      const pass = passwordInput.value.trim();
-      if (!user) return showMessage("ユーザー名を入力してください");
-      if (!pass) return showMessage("パスワードを入力してください");
-      if (users[user]) return showMessage("すでに登録されています");
-
-      users[user] = pass;
+      const u = inUser.value.trim(), p = inPass.value;
+      if (!u && !p) { return showMessage("ユーザー名とパスワードを入力してください"); }
+      if (!u)      { return showMessage("ユーザー名を入力してください"); }
+      if (!p)      { return showMessage("パスワードを入力してください"); }
+      if (users[u]){ return showMessage("そのユーザー名は既に存在します"); }
+      users[u] = p;
       localStorage.setItem("users", JSON.stringify(users));
-      showMessage("新規登録が完了しました。ログインしてください。");
+      showMessage("新規登録が設定されました。");
     };
 
     document.getElementById("login").onclick = () => {
-      const user = usernameInput.value.trim();
-      const pass = passwordInput.value.trim();
-      if (!user) return showMessage("ユーザー名を入力してください");
-      if (!pass) return showMessage("パスワードを入力してください");
-
-      if (users[user] === pass) {
-        loginUser(user);
+      const u = inUser.value.trim(), p = inPass.value;
+      if (!u && !p) { return showMessage("ユーザー名とパスワードを入力してください"); }
+      if (!u)      { return showMessage("ユーザー名を入力してください"); }
+      if (!p)      { return showMessage("パスワードを入力してください"); }
+      if (users[u] === p) {
+        enterApp(u);
       } else {
-        showMessage("ユーザー名またはパスワードが間違っています");
+        showMessage("ユーザー名またはパスワードが違います");
       }
     };
 
     document.getElementById("logout").onclick = () => {
       localStorage.removeItem("currentUser");
+      currentUser = null;
       authContainer.classList.add("active");
-      app.classList.remove("active");
+      appContainer.classList.remove("active");
     };
 
-    // メモ機能
+    /*────────────────────────メモ機能───────────────*/
     let notes = [];
     let currentIndex = 0;
 
-    const menuBtn = document.getElementById("menu-button");
-    const sidebar = document.getElementById("sidebar");
-    const addBtn = document.getElementById("add-note");
+    const menuBtn   = document.getElementById("menu-button");
+    const sidebar   = document.getElementById("sidebar");
+    const addBtn    = document.getElementById("add-note");
     const deleteBtn = document.getElementById("delete-note");
-    const noteList = document.getElementById("note-list");
+    const noteList  = document.getElementById("note-list");
     const noteTitle = document.getElementById("note-title");
     const noteContent = document.getElementById("note-content");
 
+    // サイドバー表示切替
     menuBtn.onclick = () => sidebar.classList.toggle("hidden");
 
+    // メモ追加
     addBtn.onclick = () => {
       notes.push({ title: "新しいメモ", content: "" });
       currentIndex = notes.length - 1;
       saveAndRender();
     };
 
+    // メモ削除
     deleteBtn.onclick = () => {
-      if (notes.length > 0) {
-        notes.splice(currentIndex, 1);
-        currentIndex = Math.max(0, currentIndex - 1);
-        saveAndRender();
-      }
+      if (notes.length === 0) return;
+      notes.splice(currentIndex, 1);
+      currentIndex = Math.max(0, currentIndex - 1);
+      saveAndRender();
     };
 
+    // タイトル変更
     noteTitle.oninput = () => {
       notes[currentIndex].title = noteTitle.value;
       saveNotes();
       renderNoteList();
     };
 
+    // 本文変更
     noteContent.oninput = () => {
       notes[currentIndex].content = noteContent.value;
       saveNotes();
@@ -214,12 +257,12 @@
 
     function renderNoteList() {
       noteList.innerHTML = "";
-      notes.forEach((note, index) => {
+      notes.forEach((n, i) => {
         const li = document.createElement("li");
-        li.textContent = note.title || "無題";
-        li.className = index === currentIndex ? "active" : "";
+        li.textContent = n.title || "無題";
+        if (i === currentIndex) li.classList.add("active");
         li.onclick = () => {
-          currentIndex = index;
+          currentIndex = i;
           renderMain();
           renderNoteList();
         };
@@ -244,16 +287,17 @@
     }
 
     function loadNotes() {
-      notes = JSON.parse(localStorage.getItem(`notes_${currentUser}`)) || [
-        { title: "おはようメモ", content: "メモはここに保存されるよ" },
-      ];
+      notes = JSON.parse(localStorage.getItem(`notes_${currentUser}`)) || 
+              [{ title: "おはようメモ", content: "メモはここに保存されるよ" }];
       currentIndex = 0;
       saveAndRender();
     }
 
-    // ログイン済みなら復帰
-    if (currentUser) {
-      loginUser(currentUser);
+    // 既にログイン中ならアプリ画面へ
+    if (currentUser && users[currentUser]) {
+      authContainer.classList.remove("active");
+      appContainer.classList.add("active");
+      loadNotes();
     }
   </script>
 </body>
