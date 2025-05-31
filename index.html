@@ -40,13 +40,16 @@
       display: flex;
       justify-content: space-between;
     }
-    .message {
-      color: green;
+    #authMessage {
+      text-align: center;
+      margin-top: 10px;
       font-weight: bold;
+    }
+    .success {
+      color: green;
     }
     .error {
       color: red;
-      font-weight: bold;
     }
   </style>
 </head>
@@ -56,9 +59,9 @@
   <h2>ログイン・新規登録</h2>
   <input type="text" id="username" placeholder="ユーザー名">
   <input type="password" id="password" placeholder="パスワード">
-  <button onclick="login()">ログイン</button>
-  <button onclick="register()">新規登録</button>
-  <p id="authMessage" class="message"></p>
+  <button id="loginBtn">ログイン</button>
+  <button id="registerBtn">新規登録</button>
+  <p id="authMessage"></p>
 </div>
 
 <div id="appSection" style="display:none;">
@@ -85,10 +88,9 @@
     }
   };
 
-  function register() {
+  document.getElementById("registerBtn").onclick = function () {
     const user = document.getElementById("username").value.trim();
     const pass = document.getElementById("password").value;
-
     if (!user && !pass) {
       showMessage("ユーザー名とパスワードを入力してください", true);
       return;
@@ -103,7 +105,6 @@
     }
 
     const users = JSON.parse(localStorage.getItem("users") || "{}");
-
     if (users[user]) {
       showMessage("そのユーザー名は既に使われています", true);
       return;
@@ -112,9 +113,9 @@
     users[user] = pass;
     localStorage.setItem("users", JSON.stringify(users));
     showMessage("新規登録が設定されました。", false);
-  }
+  };
 
-  function login() {
+  document.getElementById("loginBtn").onclick = function () {
     const user = document.getElementById("username").value.trim();
     const pass = document.getElementById("password").value;
 
@@ -132,7 +133,6 @@
     }
 
     const users = JSON.parse(localStorage.getItem("users") || "{}");
-
     if (users[user] === pass) {
       currentUser = user;
       localStorage.setItem("currentUser", user);
@@ -141,7 +141,7 @@
     } else {
       showMessage("ログインに失敗しました", true);
     }
-  }
+  };
 
   function logout() {
     localStorage.removeItem("currentUser");
@@ -163,7 +163,7 @@
   function showMessage(msg, isError) {
     const el = document.getElementById("authMessage");
     el.textContent = msg;
-    el.className = isError ? "error" : "message";
+    el.className = isError ? "error" : "success";
   }
 
   document.getElementById("memo").addEventListener("input", () => {
