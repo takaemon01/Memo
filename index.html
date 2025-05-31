@@ -3,174 +3,258 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>メモ帳アプリ</title>
+  <title>メモ帳</title>
   <style>
     body {
-      font-family: sans-serif;
       margin: 0;
+      font-family: sans-serif;
+      background: #1e1e1e;
+      color: #d0f0c0;
+    }
+    #auth-container, #app {
+      display: none;
+      height: 100vh;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    #auth-container.active, #app.active {
+      display: flex;
+    }
+    input, textarea, button {
+      margin: 5px;
+      padding: 10px;
+      font-size: 1em;
+    }
+    #message {
+      color: yellow;
+    }
+    #app {
+      flex-direction: row;
+    }
+    #menu-button {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 1.5em;
+      background: none;
+      border: none;
+      color: #d0f0c0;
+      cursor: pointer;
+    }
+    #sidebar {
+      width: 250px;
+      background: #333;
+      padding: 10px;
+      overflow-y: auto;
+      transition: transform 0.3s ease;
+    }
+    #sidebar.hidden {
+      transform: translateX(-260px);
+    }
+    #note-list {
+      list-style: none;
       padding: 0;
     }
-    .container {
-      padding: 20px;
-      max-width: 600px;
-      margin: auto;
+    #note-list li {
+      padding: 5px;
+      border-bottom: 1px solid #444;
+      cursor: pointer;
     }
-    textarea {
-      width: 100%;
-      height: 300px;
-      margin-top: 10px;
+    #note-list li.active {
+      background: #444;
     }
-    .auth {
-      max-width: 300px;
-      margin: 50px auto;
-    }
-    .auth input {
-      display: block;
-      width: 100%;
-      margin: 10px 0;
-      padding: 10px;
-    }
-    .auth button {
-      width: 100%;
-      padding: 10px;
-    }
-    .menu {
-      background: #eee;
-      padding: 10px;
+    #main {
+      flex: 1;
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
+      padding: 20px;
     }
-    #authMessage {
-      text-align: center;
-      margin-top: 10px;
-      font-weight: bold;
+    #note-title, #note-content {
+      background: #2a2a2a;
+      color: #fff;
+      border: none;
     }
-    .success {
-      color: green;
+    #note-title {
+      font-size: 1.2em;
+      padding: 10px;
+      margin-bottom: 10px;
     }
-    .error {
-      color: red;
+    #note-content {
+      flex: 1;
+      padding: 10px;
+      resize: none;
+      font-family: monospace;
     }
   </style>
 </head>
 <body>
-
-<div class="auth" id="authSection">
-  <h2>ログイン・新規登録</h2>
-  <input type="text" id="username" placeholder="ユーザー名">
-  <input type="password" id="password" placeholder="パスワード">
-  <button id="loginBtn">ログイン</button>
-  <button id="registerBtn">新規登録</button>
-  <p id="authMessage"></p>
-</div>
-
-<div id="appSection" style="display:none;">
-  <div class="menu">
-    <span id="welcome"></span>
-    <button onclick="logout()">サインアウト</button>
+  <!-- ログイン・登録 -->
+  <div id="auth-container" class="active">
+    <h2>ログイン / 新規登録</h2>
+    <input id="username" placeholder="ユーザー名">
+    <input id="password" placeholder="パスワード" type="password">
+    <button id="register">新規登録</button>
+    <button id="login">ログイン</button>
+    <div id="message"></div>
   </div>
-  <div class="container">
-    <h2>メモ帳</h2>
-    <textarea id="memo" placeholder="ここにメモを書いてください..."></textarea>
+
+  <!-- メモアプリ -->
+  <div id="app">
+    <button id="menu-button">≡</button>
+    <div id="sidebar" class="hidden">
+      <h2>メモ一覧</h2>
+      <button id="add-note">+ 新しいメモ</button>
+      <ul id="note-list"></ul>
+      <button id="delete-note">🗑 削除</button>
+      <button id="logout">🚪 サインアウト</button>
+    </div>
+    <div id="main">
+      <input id="note-title" placeholder="タイトルを入力" />
+      <textarea id="note-content" placeholder="メモを入力..."></textarea>
+    </div>
   </div>
-</div>
 
-<script>
-  let currentUser = null;
+  <script>
+    // 認証部分
+    const users = JSON.parse(localStorage.getItem("users")) || {};
+    let currentUser = localStorage.getItem("currentUser");
 
-  // 自動ログイン
-  window.onload = function () {
-    const user = localStorage.getItem("currentUser");
-    if (user) {
-      currentUser = user;
-      showApp();
-      document.getElementById("memo").value = localStorage.getItem("memo_" + currentUser) || "";
-    }
-  };
+    const authContainer = document.getElementById("auth-container");
+    const app = document.getElementById("app");
+    const message = document.getElementById("message");
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
 
-  document.getElementById("registerBtn").onclick = function () {
-    const user = document.getElementById("username").value.trim();
-    const pass = document.getElementById("password").value;
-    if (!user && !pass) {
-      showMessage("ユーザー名とパスワードを入力してください", true);
-      return;
-    }
-    if (!user) {
-      showMessage("ユーザー名を入力してください", true);
-      return;
-    }
-    if (!pass) {
-      showMessage("パスワードを入力してください", true);
-      return;
+    function showMessage(text) {
+      message.textContent = text;
     }
 
-    const users = JSON.parse(localStorage.getItem("users") || "{}");
-    if (users[user]) {
-      showMessage("そのユーザー名は既に使われています", true);
-      return;
-    }
-
-    users[user] = pass;
-    localStorage.setItem("users", JSON.stringify(users));
-    showMessage("新規登録が設定されました。", false);
-  };
-
-  document.getElementById("loginBtn").onclick = function () {
-    const user = document.getElementById("username").value.trim();
-    const pass = document.getElementById("password").value;
-
-    if (!user && !pass) {
-      showMessage("ユーザー名とパスワードを入力してください", true);
-      return;
-    }
-    if (!user) {
-      showMessage("ユーザー名を入力してください", true);
-      return;
-    }
-    if (!pass) {
-      showMessage("パスワードを入力してください", true);
-      return;
-    }
-
-    const users = JSON.parse(localStorage.getItem("users") || "{}");
-    if (users[user] === pass) {
+    function loginUser(user) {
       currentUser = user;
       localStorage.setItem("currentUser", user);
-      showApp();
-      document.getElementById("memo").value = localStorage.getItem("memo_" + currentUser) || "";
-    } else {
-      showMessage("ログインに失敗しました", true);
+      authContainer.classList.remove("active");
+      app.classList.add("active");
+      loadNotes();
     }
-  };
 
-  function logout() {
-    localStorage.removeItem("currentUser");
-    currentUser = null;
-    document.getElementById("authSection").style.display = "block";
-    document.getElementById("appSection").style.display = "none";
-    document.getElementById("username").value = "";
-    document.getElementById("password").value = "";
-    document.getElementById("memo").value = "";
-    showMessage("", false);
-  }
+    document.getElementById("register").onclick = () => {
+      const user = usernameInput.value.trim();
+      const pass = passwordInput.value.trim();
+      if (!user) return showMessage("ユーザー名を入力してください");
+      if (!pass) return showMessage("パスワードを入力してください");
+      if (users[user]) return showMessage("すでに登録されています");
 
-  function showApp() {
-    document.getElementById("authSection").style.display = "none";
-    document.getElementById("appSection").style.display = "block";
-    document.getElementById("welcome").textContent = `ようこそ、${currentUser} さん`;
-  }
+      users[user] = pass;
+      localStorage.setItem("users", JSON.stringify(users));
+      showMessage("新規登録が完了しました。ログインしてください。");
+    };
 
-  function showMessage(msg, isError) {
-    const el = document.getElementById("authMessage");
-    el.textContent = msg;
-    el.className = isError ? "error" : "success";
-  }
+    document.getElementById("login").onclick = () => {
+      const user = usernameInput.value.trim();
+      const pass = passwordInput.value.trim();
+      if (!user) return showMessage("ユーザー名を入力してください");
+      if (!pass) return showMessage("パスワードを入力してください");
 
-  document.getElementById("memo").addEventListener("input", () => {
+      if (users[user] === pass) {
+        loginUser(user);
+      } else {
+        showMessage("ユーザー名またはパスワードが間違っています");
+      }
+    };
+
+    document.getElementById("logout").onclick = () => {
+      localStorage.removeItem("currentUser");
+      authContainer.classList.add("active");
+      app.classList.remove("active");
+    };
+
+    // メモ機能
+    let notes = [];
+    let currentIndex = 0;
+
+    const menuBtn = document.getElementById("menu-button");
+    const sidebar = document.getElementById("sidebar");
+    const addBtn = document.getElementById("add-note");
+    const deleteBtn = document.getElementById("delete-note");
+    const noteList = document.getElementById("note-list");
+    const noteTitle = document.getElementById("note-title");
+    const noteContent = document.getElementById("note-content");
+
+    menuBtn.onclick = () => sidebar.classList.toggle("hidden");
+
+    addBtn.onclick = () => {
+      notes.push({ title: "新しいメモ", content: "" });
+      currentIndex = notes.length - 1;
+      saveAndRender();
+    };
+
+    deleteBtn.onclick = () => {
+      if (notes.length > 0) {
+        notes.splice(currentIndex, 1);
+        currentIndex = Math.max(0, currentIndex - 1);
+        saveAndRender();
+      }
+    };
+
+    noteTitle.oninput = () => {
+      notes[currentIndex].title = noteTitle.value;
+      saveNotes();
+      renderNoteList();
+    };
+
+    noteContent.oninput = () => {
+      notes[currentIndex].content = noteContent.value;
+      saveNotes();
+    };
+
+    function saveNotes() {
+      localStorage.setItem(`notes_${currentUser}`, JSON.stringify(notes));
+    }
+
+    function renderNoteList() {
+      noteList.innerHTML = "";
+      notes.forEach((note, index) => {
+        const li = document.createElement("li");
+        li.textContent = note.title || "無題";
+        li.className = index === currentIndex ? "active" : "";
+        li.onclick = () => {
+          currentIndex = index;
+          renderMain();
+          renderNoteList();
+        };
+        noteList.appendChild(li);
+      });
+    }
+
+    function renderMain() {
+      if (notes.length === 0) {
+        noteTitle.value = "";
+        noteContent.value = "";
+      } else {
+        noteTitle.value = notes[currentIndex].title;
+        noteContent.value = notes[currentIndex].content;
+      }
+    }
+
+    function saveAndRender() {
+      saveNotes();
+      renderNoteList();
+      renderMain();
+    }
+
+    function loadNotes() {
+      notes = JSON.parse(localStorage.getItem(`notes_${currentUser}`)) || [
+        { title: "おはようメモ", content: "メモはここに保存されるよ" },
+      ];
+      currentIndex = 0;
+      saveAndRender();
+    }
+
+    // ログイン済みなら復帰
     if (currentUser) {
-      localStorage.setItem("memo_" + currentUser, document.getElementById("memo").value);
+      loginUser(currentUser);
     }
-  });
-</script>
+  </script>
 </body>
 </html>
